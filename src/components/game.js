@@ -15,24 +15,26 @@ export default class Game extends React.Component {
           status: '',
           turn: 'white',
           whiteFallenSoldiers: [],
-          blackFallenSoldiers: []
+          blackFallenSoldiers: [],
+          gameOver: false
         };
     }
 
     
   handleClick(i) {
+    if (this.state.gameOver) return;
     const squares = [...this.state.squares];
 
     if (this.state.sourceSelection === -1) {
       if (!squares[i] || squares[i].player !== this.state.player) {
-        this.setState({ status: "Wrong selection. Choose player " + this.state.player + " pieces." });
+        this.setState({ status: "Wrong selection. Choose one of player " + this.state.player + "'s pieces." });
         if (squares[i]) {
           squares[i].style = { ...squares[i].style, backgroundColor: "" };
         }
       } else {
         squares[i].style = { ...squares[i].style, backgroundColor: "RGB(111,143,114)" }; // Emerald from http://omgchess.blogspot.com/2015/09/chess-board-color-schemes.html
         this.setState({
-          status: "Choose destination for the selected piece",
+          status: "Choose a destination for the selected piece",
           sourceSelection: i
         })
       }
@@ -57,8 +59,7 @@ export default class Game extends React.Component {
         if (squares[i] !== null) {
           if (squares[i].player === 1) {
             whiteFallenSoldiers.push(squares[i]);
-          }
-          else {
+          } else {
             blackFallenSoldiers.push(squares[i]);
           }
         }
@@ -67,6 +68,26 @@ export default class Game extends React.Component {
         squares[this.state.sourceSelection] = null;
 
         const isCheckMe = this.isCheckForPlayer(squares, this.state.player)
+        
+        const otherPlayer = this.state.player === 1 ? 2 : 1;
+        if (!this.hasValidMove(squares, otherPlayer)) {
+          if (this.isCheckForPlayer(squares, otherPlayer)) {
+            this.setState(oldState => ({
+              status: "Checkmate. player " + this.state.player + " wins!",
+              sourceSelection: -1,
+              squares,
+              gameOver: true
+            }))
+          } else {
+            this.setState(oldState => ({
+              status: "Draw by stalemate!",
+              sourceSelection: -1,
+              squares,
+              gameOver: true
+            }))
+          }
+          return
+        }
 
         if (isCheckMe) {
           this.setState(oldState => ({
@@ -99,7 +120,7 @@ export default class Game extends React.Component {
   getKingPosition(squares, player) {
     return squares.reduce((acc, curr, i) =>
       acc || //King may be only one, if we had found it, returned his position
-      ((curr //current squre mustn't be a null
+      ((curr //current square mustn't be a null
         && (curr.getPlayer() === player)) //we are looking for aspecial king 
         && (curr instanceof King)
         && i), // returned position if all conditions are completed
@@ -117,6 +138,24 @@ export default class Game extends React.Component {
         canPieceKillPlayersKing(curr, idx)
         && true),
       false)
+  }
+
+  hasValidMove(squares, player) {
+    for (var i = 0; i < 64; i++) {
+      if (squares[i] != null && squares[i].player === player) {
+        for (var j = 0; j < 64; j++) {
+          if (i !== j && !(squares[j] && squares[j].player === player) && squares[i].isMovePossible(i, j, squares)) {
+            const newSquares = [...squares];
+            newSquares[j] = newSquares[i];
+            newSquares[i] = null;
+            if (!this.isCheckForPlayer(newSquares, player)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 
   render() {
