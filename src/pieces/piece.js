@@ -3,7 +3,6 @@ export default class Piece {
         this.player = player;
         this.style = { backgroundImage: "url('" + iconUrl + "')" };
         this.hasMoved = false;
-        this.type = "";
     }
 
     getPlayer() {

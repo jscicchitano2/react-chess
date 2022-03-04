@@ -30,6 +30,10 @@ export default class Pawn extends Piece {
         return false;
     }
 
+    canPromote(position) {
+        return (this.player === 1 && position < 8) || (this.player === 2 && position > 55); 
+    }
+
     /**
      * returns array of one if pawn moves two steps, else returns empty array  
      * @param  {[type]} src  [description]
