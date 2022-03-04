@@ -6,35 +6,33 @@ import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
 
 export default class Game extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-          squares: initializeBoard(),
-          player: 1,
-          sourceSelection: -1,
-          status: '',
-          turn: 'white',
-          whiteFallenSoldiers: [],
-          blackFallenSoldiers: [],
-          gameOver: false
-        };
-    }
+  constructor(props) {
+      super(props);
+      this.state = {
+        squares: initializeBoard(),
+        player: 1,
+        sourceSelection: -1,
+        status: '',
+        turn: 'white',
+        whiteFallenSoldiers: [],
+        blackFallenSoldiers: [],
+        gameOver: false
+      };
+  }
 
-    
   handleClick(i) {
     if (this.state.gameOver) return;
+
     const squares = [...this.state.squares];
 
     if (this.state.sourceSelection === -1) {
       if (!squares[i] || squares[i].player !== this.state.player) {
-        this.setState({ status: "Wrong selection. Choose one of player " + this.state.player + "'s pieces." });
         if (squares[i]) {
           squares[i].style = { ...squares[i].style, backgroundColor: "" };
         }
       } else {
         squares[i].style = { ...squares[i].style, backgroundColor: "RGB(111,143,114)" }; // Emerald from http://omgchess.blogspot.com/2015/09/chess-board-color-schemes.html
         this.setState({
-          status: "Choose a destination for the selected piece",
           sourceSelection: i
         })
       }
@@ -44,10 +42,29 @@ export default class Game extends React.Component {
     squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
 
     if (squares[i] && squares[i].player === this.state.player) {
-      this.setState({
-        status: "Wrong selection. Choose valid source and destination again.",
-        sourceSelection: -1,
-      });
+      if ((squares[this.state.sourceSelection].type === "king" && squares[i].type === "rook") && 
+        this.canCastle(squares, this.state.sourceSelection, i)) {
+        squares[i].hasMoved = true;
+        squares[this.state.sourceSelection].hasMoved = true;
+        if (this.state.sourceSelection < i) {
+          squares[this.state.sourceSelection + 2] = squares[this.state.sourceSelection];
+          squares[this.state.sourceSelection + 1] = squares[i];
+        } else {
+          squares[this.state.sourceSelection - 2] = squares[this.state.sourceSelection];
+          squares[this.state.sourceSelection - 1] = squares[i];
+        }
+        squares[this.state.sourceSelection] = null;
+        squares[i] = null;
+        let player = this.state.player === 1 ? 2 : 1;
+        let turn = this.state.turn === 'white' ? 'black' : 'white';
+        this.setState({
+          sourceSelection: -1,
+          squares,
+          player,
+          status: '',
+          turn
+        });
+      }
     } else {
 
       const whiteFallenSoldiers = [];
@@ -66,6 +83,7 @@ export default class Game extends React.Component {
 
         squares[i] = squares[this.state.sourceSelection];
         squares[this.state.sourceSelection] = null;
+        squares[i].hasMoved = true;
 
         const isCheckMe = this.isCheckForPlayer(squares, this.state.player)
         
@@ -73,7 +91,7 @@ export default class Game extends React.Component {
         if (!this.hasValidMove(squares, otherPlayer)) {
           if (this.isCheckForPlayer(squares, otherPlayer)) {
             this.setState(oldState => ({
-              status: "Checkmate. player " + this.state.player + " wins!",
+              status: "Checkmate. Player " + this.state.player + " wins!",
               sourceSelection: -1,
               squares,
               gameOver: true
@@ -91,7 +109,6 @@ export default class Game extends React.Component {
 
         if (isCheckMe) {
           this.setState(oldState => ({
-            status: "Wrong selection. Choose valid source and destination again. Now you have a check!",
             sourceSelection: -1,
           }))
         } else {
@@ -110,7 +127,6 @@ export default class Game extends React.Component {
         }
       } else {
         this.setState({
-          status: "Wrong selection. Choose valid source and destination again.",
           sourceSelection: -1,
         });
       }
@@ -156,6 +172,16 @@ export default class Game extends React.Component {
       }
     }
     return false;
+  }
+
+  canCastle(squares, start, dest) {
+    if (squares[start].hasMoved || squares[dest].hasMoved) return false;
+    let min = Math.min(start, dest);
+    let max = Math.max(start, dest);
+    for (var i = min + 1; i < max; i++) {
+      if (squares[i]) return false;
+    }
+    return true;
   }
 
   render() {
