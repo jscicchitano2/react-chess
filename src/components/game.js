@@ -37,6 +37,11 @@ export default class Game extends React.Component {
         })
       }
       return
+    } else if (this.state.sourceSelection === i) {
+      squares[i].style = { ...squares[i].style, backgroundColor: "" };
+      this.setState({
+        sourceSelection: -1
+      });
     }
 
     squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
