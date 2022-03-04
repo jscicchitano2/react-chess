@@ -1,5 +1,5 @@
 import Piece from './piece.js';
-import { isSameRow } from '../helpers';
+import { isSameRow } from '../helper-functions';
 
 export default class Knight extends Piece {
   constructor(player) {
