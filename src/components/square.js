@@ -3,9 +3,10 @@ import '../index.css';
 
 export default function Square(props) {
     return (
-        <button 
-            class={"square " + props.shade}
+        <button className={"square " + props.shade}
+            onClick={props.onClick}
             style={props.style}
+            key={props.keyVal}
         >
         </button>
     );

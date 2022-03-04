@@ -7,8 +7,10 @@ export default class Board extends React.Component {
         return (
           <Square
             key={squareNumber}
+            keyVal={squareNumber}
             style={this.props.squares[squareNumber] ? this.props.squares[squareNumber].style : null}
             shade={squareShade}
+            onClick={() => this.props.onClick(squareNumber)}
           />
         );
     }
