@@ -41,18 +41,24 @@ export default class Game extends React.Component {
         })
       }
       return
-    } else if (this.state.sourceSelection === i) {
-      squares[i].style = { ...squares[i].style, backgroundColor: "" };
-      this.setState({
-        sourceSelection: -1
-      });
+    } else {
+      const isPossible = squares[this.state.sourceSelection] instanceof Pawn ? 
+        squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, Boolean[squares[i]]) : 
+        squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, squares);
+      if (((squares[i] && squares[i].player === this.state.player) || !isPossible)) {
+        squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
+        this.setState({
+          sourceSelection: -1
+        });
+      }
     }
 
     squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
 
     if (squares[i] && squares[i].player === this.state.player) {
+      // Handle castling
       if ((squares[this.state.sourceSelection] instanceof King && squares[i] instanceof Rook) && 
-        this.canCastle(squares, this.state.sourceSelection, i)) {
+        this.canCastle(squares, this.state.sourceSelection, i, this.state.player)) {
         squares[i].hasMoved = true;
         squares[this.state.sourceSelection].hasMoved = true;
         if (this.state.sourceSelection < i) {
@@ -79,7 +85,9 @@ export default class Game extends React.Component {
       const whiteFallenSoldiers = [];
       const blackFallenSoldiers = [];
       const isDestEnemyOccupied = Boolean(squares[i]);
-      const isMovePossible = squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, isDestEnemyOccupied);
+      const isMovePossible = squares[this.state.sourceSelection] instanceof Pawn ? 
+        squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, isDestEnemyOccupied) : 
+        squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, squares);
       const testSquares = [...squares];
       testSquares[i] = testSquares[this.state.sourceSelection];
       testSquares[this.state.sourceSelection] = null;
@@ -164,7 +172,11 @@ export default class Game extends React.Component {
   isCheckForPlayer(squares, player) {
     const opponent = player === 1 ? 2 : 1
     const playersKingPosition = this.getKingPosition(squares, player)
-    const canPieceKillPlayersKing = (piece, i) => piece.isMovePossible(i, playersKingPosition, squares)
+    const canPieceKillPlayersKing = function(piece, i) {
+      return piece instanceof Pawn ? 
+        piece.isMovePossible(i, playersKingPosition, true) : 
+        piece.isMovePossible(i, playersKingPosition, squares);
+    }
     for (var i = 0; i < 64; i++) {
       if (squares[i] != null && squares[i].player === opponent && canPieceKillPlayersKing(squares[i], i)) {
         return true;
@@ -191,14 +203,38 @@ export default class Game extends React.Component {
     return false;
   }
 
-  canCastle(squares, start, dest) {
+  canCastle(squares, start, dest, player) {
     if (squares[start].hasMoved || squares[dest].hasMoved) return false;
     let min = Math.min(start, dest);
     let max = Math.max(start, dest);
     for (var i = min + 1; i < max; i++) {
       if (squares[i]) return false;
     }
+    if (start > dest && (this.opponentCanAttackPosition(squares, player, start) || 
+      this.opponentCanAttackPosition(squares, player, start - 1) || 
+      this.opponentCanAttackPosition(squares, player, start - 2))) {
+        return false;
+    } else if (start < dest && (this.opponentCanAttackPosition(squares, player, start) || 
+      this.opponentCanAttackPosition(squares, player, start + 1) || 
+      this.opponentCanAttackPosition(squares, player, start + 2))) {
+        return false;
+    }
     return true;
+  }
+
+  opponentCanAttackPosition(squares, player, position) {
+    const opponent = player === 1 ? 2 : 1
+    const canPieceKillPlayersPiece = function(piece, i) {
+      return piece instanceof Pawn ? 
+        piece.isMovePossible(i, position, true) : 
+        piece.isMovePossible(i, position, squares);
+    }
+    for (var i = 0; i < 64; i++) {
+      if (squares[i] != null && squares[i].player === opponent && canPieceKillPlayersPiece(squares[i], i)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   render() {
