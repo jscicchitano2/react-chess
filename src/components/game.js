@@ -6,7 +6,6 @@ import Rook from '../pieces/rook';
 import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
-import Piece from '../pieces/piece';
 import Queen from '../pieces/queen';
 
 export default class Game extends React.Component {
@@ -23,6 +22,8 @@ export default class Game extends React.Component {
         lastMove: [null, null],
         history: [initializeBoard()],
         stepNumber: 0,
+        timerPlayer1: null,
+        timerPlayer2: null,
         gameOver: false
       };
   }
@@ -41,6 +42,13 @@ export default class Game extends React.Component {
         squares[i].style = { ...squares[i].style, backgroundColor: "RGB(111,143,114)" }; // Emerald from http://omgchess.blogspot.com/2015/09/chess-board-color-schemes.html
         this.setState({
           sourceSelection: i
+        })
+      }
+      if (this.state.stepNumber === 0) {
+        const timer1 = new Timer(1, 600, document.querySelector('#time-1'));
+        timer1.startTimer();
+        this.setState({
+          timerPlayer1: timer1
         })
       }
       return
@@ -75,6 +83,22 @@ export default class Game extends React.Component {
         squares[i] = null;
         let player = this.state.player === 1 ? 2 : 1;
         let turn = this.state.turn === 'white' ? 'black' : 'white';
+        if (this.state.player === 1) {
+          this.state.timerPlayer1.pause();
+          if (this.state.stepNumber === 0) {
+            let timer2 = new Timer(2, 600, document.querySelector('#time-2'));
+            timer2.startTimer();
+            this.setState({
+              timerPlayer2: timer2
+            })
+            this.isTimeOut();
+          } else {
+            this.state.timerPlayer2.unPause();
+          }
+        } else {
+          this.state.timerPlayer2.pause();
+          this.state.timerPlayer1.unPause();
+        }
         this.setState({
           lastMove: [this.state.sourceSelection, i],
           sourceSelection: -1,
@@ -164,6 +188,23 @@ export default class Game extends React.Component {
           let player = this.state.player === 1 ? 2 : 1;
           let turn = this.state.turn === 'white' ? 'black' : 'white';
 
+          if (this.state.player === 1) {
+            this.state.timerPlayer1.pause();
+            if (this.state.stepNumber === 0) {
+              let timer2 = new Timer(2, 600, document.querySelector('#time-2'));
+              timer2.startTimer();
+              this.setState({
+                timerPlayer2: timer2
+              })
+              this.isTimeOut();
+            } else {
+              this.state.timerPlayer2.unPause();
+            }
+          } else {
+            this.state.timerPlayer2.pause();
+            this.state.timerPlayer1.unPause();
+          }
+
           this.setState(oldState => ({
             lastMove: [this.state.sourceSelection, i],
             sourceSelection: -1,
@@ -183,6 +224,27 @@ export default class Game extends React.Component {
         });
       }
     }
+  }
+
+  isTimeOut() {
+    var self = this;
+    this.interval = setInterval(function() {
+        if (self.state.timerPlayer1.duration < 1) {
+          self.state.timerPlayer1.pause();
+          self.setState(oldState => ({
+            status: "Time expired. Player 2 wins!",
+            sourceSelection: -1,
+            gameOver: true
+          }))
+        } else if (self.state.timerPlayer2.duration < 1) {
+          self.state.timerPlayer2.pause();
+          self.setState(oldState => ({
+            status: "Time expired. Player 1 wins!",
+            sourceSelection: -1,
+            gameOver: true
+          }))
+        }
+    }, 1000);
   }
 
   jumpNext(prev) {
@@ -301,6 +363,8 @@ export default class Game extends React.Component {
               <button onClick={() => this.jumpNext(false)}>{">"}</button>
               <button onClick={() => this.jumpTo(false)}>{">>"}</button>
             </div>
+            <div>Player 1: <span id="time-1">10:00</span></div>
+            <div>Player 2: <span id="time-2">10:00</span></div>
             <div className="game-status">{this.state.status}</div>
 
             <div className="fallen-soldier-block">
@@ -318,3 +382,38 @@ export default class Game extends React.Component {
     );
   }
 }
+
+class Timer {
+  constructor(player, duration, display) {
+    this.player = player;
+    this.duration = duration;
+    this.display = display
+    this.interval = null;
+  }
+
+  startTimer() {
+    var timer = this.duration, minutes, seconds, display = this.display, self = this;
+    this.interval = setInterval(function() {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+        self.duration = timer--;
+
+        if (timer < 0) {
+            timer = this.duration;
+        }
+    }, 1000);
+  }
+
+  pause() {
+    clearInterval(this.interval);
+  }
+
+  unPause() {
+    this.startTimer();
+  }
+} 
