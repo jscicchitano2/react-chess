@@ -177,6 +177,8 @@ export default class Game extends React.Component {
               gameOver: true
             }))
           }
+          this.state.timerPlayer1.pause();
+          this.state.timerPlayer2.pause();
           return
         }
 
@@ -393,19 +395,31 @@ class Timer {
 
   startTimer() {
     var timer = this.duration, minutes, seconds, display = this.display, self = this;
+    minutes = parseInt(timer / 60, 10);
+    seconds = parseInt(timer % 60, 10);
+
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+    display.textContent = minutes + ":" + seconds;
+    self.duration = timer--;
+
+    if (timer < 0) {
+        timer = this.duration;
+    }
     this.interval = setInterval(function() {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
+      minutes = parseInt(timer / 60, 10);
+      seconds = parseInt(timer % 60, 10);
 
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
+      minutes = minutes < 10 ? "0" + minutes : minutes;
+      seconds = seconds < 10 ? "0" + seconds : seconds;
 
-        display.textContent = minutes + ":" + seconds;
-        self.duration = timer--;
+      display.textContent = minutes + ":" + seconds;
+      self.duration = timer--;
 
-        if (timer < 0) {
-            timer = this.duration;
-        }
+      if (timer < 0) {
+          timer = this.duration;
+      }
     }, 1000);
   }
 
