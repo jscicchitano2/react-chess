@@ -233,12 +233,14 @@ export default class Game extends React.Component {
     this.interval = setInterval(function() {
         if (self.state.timerPlayer1.duration < 1) {
           self.state.timerPlayer1.pause();
+          self.state.timerPlayer2.pause();
           self.setState(oldState => ({
             status: "Time expired. Player 2 wins!",
             sourceSelection: -1,
             gameOver: true
           }))
         } else if (self.state.timerPlayer2.duration < 1) {
+          self.state.timerPlayer1.pause();
           self.state.timerPlayer2.pause();
           self.setState(oldState => ({
             status: "Time expired. Player 1 wins!",
