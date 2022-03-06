@@ -21,12 +21,14 @@ export default class Game extends React.Component {
         whiteFallenSoldiers: [],
         blackFallenSoldiers: [],
         lastMove: [null, null],
+        history: [initializeBoard()],
+        stepNumber: 0,
         gameOver: false
       };
   }
 
   handleClick(i) {
-    if (this.state.gameOver) return;
+    if (this.state.gameOver || this.state.stepNumber !== this.state.history.length - 1) return;
 
     const squares = [...this.state.squares];
 
@@ -77,6 +79,8 @@ export default class Game extends React.Component {
           lastMove: [this.state.sourceSelection, i],
           sourceSelection: -1,
           squares,
+          history: this.state.history.concat([squares]),
+          stepNumber: this.state.history.length,
           player,
           status: '',
           turn
@@ -135,6 +139,8 @@ export default class Game extends React.Component {
               status: "Checkmate. Player " + this.state.player + " wins!",
               sourceSelection: -1,
               squares,
+              history: this.state.history.concat([squares]),
+              stepNumber: this.state.history.length,
               gameOver: true
             }))
           } else {
@@ -142,6 +148,8 @@ export default class Game extends React.Component {
               status: "Draw by stalemate!",
               sourceSelection: -1,
               squares,
+              history: this.state.history.concat([squares]),
+              stepNumber: this.state.history.length,
               gameOver: true
             }))
           }
@@ -163,6 +171,8 @@ export default class Game extends React.Component {
             whiteFallenSoldiers: [...oldState.whiteFallenSoldiers, ...whiteFallenSoldiers],
             blackFallenSoldiers: [...oldState.blackFallenSoldiers, ...blackFallenSoldiers],
             player,
+            history: this.state.history.concat([squares]),
+            stepNumber: this.state.history.length,
             status: '',
             turn
           }));
@@ -173,6 +183,22 @@ export default class Game extends React.Component {
         });
       }
     }
+  }
+
+  jumpNext(prev) {
+    const newStepNumber = prev ? Math.max(0, this.state.stepNumber - 1) : Math.min(this.state.history.length - 1, this.state.stepNumber + 1);
+    this.setState({
+      stepNumber: newStepNumber,
+      squares: this.state.history[newStepNumber]
+    });
+  }
+
+  jumpTo(first) {
+    const newStepNumber = first ? 0 : this.state.history.length - 1;
+    this.setState({
+      stepNumber: newStepNumber,
+      squares: this.state.history[newStepNumber]
+    });
   }
 
   getKingPosition(squares, player) {
@@ -268,6 +294,12 @@ export default class Game extends React.Component {
             <h3>Turn</h3>
             <div id="player-turn-box" style={{ backgroundColor: this.state.turn }}>
 
+            </div>
+            <div>
+              <button onClick={() => this.jumpTo(true)}>{"<<"}</button>
+              <button onClick={() => this.jumpNext(true)}>{"<"}</button>
+              <button onClick={() => this.jumpNext(false)}>{">"}</button>
+              <button onClick={() => this.jumpTo(false)}>{">>"}</button>
             </div>
             <div className="game-status">{this.state.status}</div>
 
