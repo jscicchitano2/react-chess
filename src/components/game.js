@@ -7,8 +7,7 @@ import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
 import Queen from '../pieces/queen';
-import {boardToFen, fenToBoard} from '../helper-functions/fen.js';
-const Chess = require('../libraries/chess.js').Chess;
+import {boardToFen} from '../helper-functions/fen.js';
 
 export default class Game extends React.Component {
   constructor(props) {
@@ -237,19 +236,15 @@ export default class Game extends React.Component {
     let player = 1
     let turn = 'white';
     var fen = boardToFen(squares);
-    var chess = new Chess(fen.trim());
     var sf = eval('stockfish');
     sf.postMessage(`position fen ${fen}`)
-    console.log(this.state.aiLevel);
     sf.postMessage(`go depth ${this.state.aiLevel}`)
     sf.onmessage = (event) => { 
       let message = event.data ? event.data : event;
       if (message.startsWith("bestmove")) {
         var move = message.split(" ")[1];
-        chess.move(move, {sloppy: true});
-        var newSquares = fenToBoard(chess.fen());
-        console.log(newSquares);
-
+        var newSquares = this.move(move);
+        
         const otherPlayer = 1;
         if (!this.hasValidMove(newSquares, otherPlayer)) {
           if (this.isCheckForPlayer(newSquares, otherPlayer)) {
@@ -290,6 +285,23 @@ export default class Game extends React.Component {
         })
       }
     }
+  }
+
+  move(move) {
+    var newSquares = [...this.state.squares];
+    var src = move.slice(0, 2);
+    var dest = move.slice(2);
+    src = ((8 - parseInt(src[1])) * 8) + (src[0].charCodeAt(0) - 97); 
+    dest = ((8 - parseInt(dest[1])) * 8) + (dest[0].charCodeAt(0) - 97); 
+    const whiteFallenSoldiers = [];
+    const isDestEnemyOccupied = Boolean(newSquares[dest]);
+    if (isDestEnemyOccupied) whiteFallenSoldiers.push(newSquares[dest]);
+    newSquares[dest] = newSquares[src];
+    newSquares[src] = null;
+    this.setState(oldState => ({
+      whiteFallenSoldiers: [...oldState.whiteFallenSoldiers, ...whiteFallenSoldiers],
+    }));
+    return newSquares;
   }
 
   isTimeOut() {
