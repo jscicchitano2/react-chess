@@ -7,6 +7,8 @@ import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
 import Queen from '../pieces/queen';
+import {boardToFen, fenToBoard} from '../helper-functions/fen.js';
+const Chess = require('../libraries/chess.js').Chess;
 
 export default class Game extends React.Component {
   constructor(props) {
@@ -24,6 +26,7 @@ export default class Game extends React.Component {
         stepNumber: 0,
         timerPlayer1: null,
         timerPlayer2: null,
+        aiLevel: 1,
         gameOver: false
       };
   }
@@ -108,7 +111,7 @@ export default class Game extends React.Component {
           player,
           status: '',
           turn
-        });
+        }, this.moveBot);
       }
     } else {
 
@@ -219,11 +222,72 @@ export default class Game extends React.Component {
             status: '',
             turn
           }));
+          this.setState({}, this.moveBot)
         }
       } else {
         this.setState({
           sourceSelection: -1,
         });
+      }
+    }
+  }
+
+  moveBot() {
+    var squares = [...this.state.squares];
+    let player = 1
+    let turn = 'white';
+    var fen = boardToFen(squares);
+    var chess = new Chess(fen.trim());
+    var sf = eval('stockfish');
+    sf.postMessage(`position fen ${fen}`)
+    console.log(this.state.aiLevel);
+    sf.postMessage(`go depth ${this.state.aiLevel}`)
+    sf.onmessage = (event) => { 
+      let message = event.data ? event.data : event;
+      if (message.startsWith("bestmove")) {
+        var move = message.split(" ")[1];
+        chess.move(move, {sloppy: true});
+        var newSquares = fenToBoard(chess.fen());
+        console.log(newSquares);
+
+        const otherPlayer = 1;
+        if (!this.hasValidMove(newSquares, otherPlayer)) {
+          if (this.isCheckForPlayer(newSquares, otherPlayer)) {
+            this.setState(oldState => ({
+              status: "Checkmate. Player " + 2 + " wins!",
+              sourceSelection: -1,
+              squares: newSquares,
+              history: this.state.history.concat([newSquares]),
+              stepNumber: this.state.history.length,
+              gameOver: true
+            }))
+          } else {
+            this.setState(oldState => ({
+              status: "Draw by stalemate!",
+              sourceSelection: -1,
+              squares: newSquares,
+              history: this.state.history.concat([newSquares]),
+              stepNumber: this.state.history.length,
+              gameOver: true
+            }))
+          }
+          this.state.timerPlayer1.pause();
+          this.state.timerPlayer2.pause();
+          return
+        }
+
+        this.state.timerPlayer2.pause();
+        this.state.timerPlayer1.unPause();
+
+        this.setState({
+          squares: newSquares,
+          sourceSelection: -1,
+          player,
+          history: this.state.history.concat([newSquares]),
+          stepNumber: this.state.history.length,
+          status: '',
+          turn
+        })
       }
     }
   }
@@ -345,6 +409,10 @@ export default class Game extends React.Component {
     return false;
   }
 
+  setStockfishLevel = (e) => {
+    this.setState({ aiLevel: e.target.value });
+  }
+
   render() {
 
     return (
@@ -360,6 +428,21 @@ export default class Game extends React.Component {
             <h3>Turn</h3>
             <div id="player-turn-box" style={{ backgroundColor: this.state.turn }}>
 
+            </div>
+            <div style={this.state.stepNumber === 0 ? {display: 'block'} : {display: 'none'}}> 
+              <label>Stockfish level:</label>
+              <select name="ai-level" id="ai-level" value={this.state.aiLevel} onChange={this.setStockfishLevel}>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </select>
             </div>
             <div>
               <button onClick={() => this.jumpTo(true)}>{"<<"}</button>
