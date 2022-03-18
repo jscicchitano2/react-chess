@@ -6,7 +6,7 @@ import Knight from '../pieces/knight';
 import Pawn from '../pieces/pawn'; 
 
 
-let boardToFen = (squares) => {
+let boardToFen = (squares, enPassat) => {
     var fen = "";
     for (var row = 0; row < 8; row++) {
         var numEmpty = 0;
@@ -65,7 +65,9 @@ let boardToFen = (squares) => {
     castleCode = castleCode === "" ? "-" : castleCode;
     fen += castleCode;
 
-    fen += " - 0 1"
+    fen += " " + enPassat;
+
+    fen += " 0 1";
 
     return fen;
 }

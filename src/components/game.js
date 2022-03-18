@@ -233,9 +233,10 @@ export default class Game extends React.Component {
 
   moveBot() {
     var squares = [...this.state.squares];
-    let player = 1
+    var enPassat = this.getEnPassat();
+    let player = 1;
     let turn = 'white';
-    var fen = boardToFen(squares);
+    var fen = boardToFen(squares, enPassat);
     var sf = eval('stockfish');
     sf.postMessage(`position fen ${fen}`)
     sf.postMessage(`go depth ${this.state.aiLevel}`)
@@ -287,6 +288,19 @@ export default class Game extends React.Component {
     }
   }
 
+  getEnPassat() {
+    var src = this.state.lastMove[0];
+    var dest = this.state.lastMove[1];
+    var squares = this.state.squares;
+    if (squares[dest] instanceof Pawn && dest >= 32 && dest < 40 && src >= 48 && src < 56) {
+      var enPassatTarget = dest + 8;
+      var col = String.fromCharCode(97 + (enPassatTarget % 8));
+      var row = Math.floor(8 - (enPassatTarget / 8));
+      return col + row;
+    }
+    return "-";
+  }
+
   move(move) {
     var newSquares = [...this.state.squares];
     var src = move.slice(0, 2);
@@ -298,6 +312,10 @@ export default class Game extends React.Component {
     if (isDestEnemyOccupied) whiteFallenSoldiers.push(newSquares[dest]);
     newSquares[dest] = newSquares[src];
     newSquares[src] = null;
+    // Pawn promotions
+    if (newSquares[dest] instanceof Pawn && newSquares[dest].canPromote(dest)) {
+      newSquares[dest] = new Queen(this.state.player);
+    }
     this.setState(oldState => ({
       whiteFallenSoldiers: [...oldState.whiteFallenSoldiers, ...whiteFallenSoldiers],
     }));
