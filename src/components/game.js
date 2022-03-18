@@ -1,12 +1,14 @@
 import React from 'react';
 import '../index.css';
 import Board from './board.js';
+import Bishop from '../pieces/bishop';
+import Knight from '../pieces/knight';
 import King from '../pieces/king';
+import Queen from '../pieces/queen';
 import Rook from '../pieces/rook';
 import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
-import Queen from '../pieces/queen';
 import {boardToFen} from '../helper-functions/fen.js';
 
 export default class Game extends React.Component {
@@ -25,6 +27,8 @@ export default class Game extends React.Component {
         stepNumber: 0,
         timerPlayer1: null,
         timerPlayer2: null,
+        player1Score: 0,
+        player2Score: 0,
         aiLevel: 1,
         gameOver: false
       };
@@ -32,7 +36,6 @@ export default class Game extends React.Component {
 
   handleClick(i) {
     if (this.state.gameOver || this.state.stepNumber !== this.state.history.length - 1) return;
-
     const squares = [...this.state.squares];
 
     if (this.state.sourceSelection === -1) {
@@ -145,7 +148,9 @@ export default class Game extends React.Component {
               whiteFallenSoldiers.push(squares[i - 8]);
               squares[i - 8] = null;
             }
+            this.setScore(new Pawn(), this.state.player);
         } else {
+          if (isDestEnemyOccupied) this.setScore(squares[i], this.state.player);
           squares[i] = squares[this.state.sourceSelection];
           squares[this.state.sourceSelection] = null;
           squares[i].hasMoved = true;
@@ -310,6 +315,9 @@ export default class Game extends React.Component {
     const whiteFallenSoldiers = [];
     const isDestEnemyOccupied = Boolean(newSquares[dest]);
     if (isDestEnemyOccupied) whiteFallenSoldiers.push(newSquares[dest]);
+    if (isDestEnemyOccupied) {
+      this.setScore(newSquares[dest], 2);
+    }
     newSquares[dest] = newSquares[src];
     newSquares[src] = null;
     // Pawn promotions
@@ -343,6 +351,45 @@ export default class Game extends React.Component {
           }))
         }
     }, 1000);
+  }
+
+  setScore(piece, player) {
+    var score = 0;
+    if (piece instanceof Pawn) {
+      score += 1;
+    } else if (piece instanceof Knight || piece instanceof Bishop) {
+      score += 3;
+    } else if (piece instanceof Rook) {
+      score += 5;
+    } else {
+      score += 9;
+    }
+
+    var player1Score = this.state.player1Score;
+    var player2Score = this.state.player2Score;
+    if (player === 1) {
+      score += this.state.player1Score;
+      if (score > this.state.player2Score) {
+        player1Score = score - this.state.player2Score;
+        player2Score = 0;
+      } else {
+        player2Score = player2Score - score;
+        player1Score = 0;
+      }
+    } else {
+      score += this.state.player2Score;
+      if (score > this.state.player1Score) {
+        player2Score = score - this.state.player1Score;
+        player1Score = 0;
+      } else {
+        player1Score = player1Score - score;
+        player2Score = 0;
+      }
+    }
+    this.setState({
+      player1Score: player1Score,
+      player2Score: player2Score
+    });
   }
 
   jumpNext(prev) {
@@ -489,6 +536,8 @@ export default class Game extends React.Component {
               {<FallenSoldierBlock
                 whiteFallenSoldiers={this.state.whiteFallenSoldiers}
                 blackFallenSoldiers={this.state.blackFallenSoldiers}
+                player1Score={this.state.player1Score === 0 ? "" : "+ " + this.state.player1Score}
+                player2Score={this.state.player2Score === 0 ? "" : "+ " + this.state.player2Score}
               />
               }
             </div>

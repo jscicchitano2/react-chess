@@ -8,6 +8,7 @@ export default function Square(props) {
             style={props.style}
             key={props.keyVal}
         >
+        {props.value}
         </button>
     );
 }
