@@ -530,8 +530,10 @@ export default class Game extends React.Component {
         if (!squares[i]) {
           var color = board[i].classList[1];
           color = color === "light-square" ? "#d0dff4" : "#4b648a";
-          board[i].style = board[i].style + ";background-image: radial-gradient(rgba(20,85,30,0.5) 19%, " + color + " 20%);";
-        } 
+          board[i].style.backgroundImage = "radial-gradient(rgba(20,85,30,0.5) 19%, " + color + " 20%)";
+        } else if (squares[i] && squares[i].player !== squares[position].player) {
+          board[i].style.backgroundColor = "RGB(111,143,114)";
+        }
       }
     }
   }
@@ -547,7 +549,11 @@ export default class Game extends React.Component {
     }
     for (var i = 0; i < 64; i++) {
       var image = board[i].style.backgroundImage;
-      if (image.indexOf("url") < 0 ) board[i].style.backgroundImage = "";
+      if (image.indexOf("url") < 0 ) {
+        board[i].style.background = "";
+      } else {
+        board[i].style.backgroundColor = "";
+      }
     }
   }
 
