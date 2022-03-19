@@ -13,31 +13,37 @@ import {boardToFen} from '../helper-functions/fen.js';
 
 export default class Game extends React.Component {
   constructor(props) {
+      var whitePlayer = Math.floor(Math.random() * (2 - 1 + 1)) + 1;
       super(props);
       this.state = {
-        squares: initializeBoard(),
-        player: 1,
+        whitePlayer: whitePlayer,
+        squares: initializeBoard(whitePlayer),
+        player: whitePlayer,
         sourceSelection: -1,
         status: '',
         turn: 'white',
         whiteFallenSoldiers: [],
         blackFallenSoldiers: [],
         lastMove: [null, null],
-        history: [initializeBoard()],
+        history: [initializeBoard(whitePlayer)],
         stepNumber: 0,
         timerPlayer1: null,
         timerPlayer2: null,
         player1Score: 0,
         player2Score: 0,
         aiLevel: 1,
-        gameOver: false
+        gameOver: false,
+        numMoves: 0
       };
   }
 
   handleClick(i) {
     if (this.state.gameOver || this.state.stepNumber !== this.state.history.length - 1) return;
+    if (this.state.player === 2) {
+      this.moveBot();
+      return;
+    }
     const squares = [...this.state.squares];
-
     if (this.state.sourceSelection === -1) {
       if (!squares[i] || squares[i].player !== this.state.player) {
         if (squares[i]) {
@@ -49,7 +55,7 @@ export default class Game extends React.Component {
           sourceSelection: i
         })
       }
-      if (this.state.stepNumber === 0) {
+      if (this.state.timerPlayer1 === null) {
         const timer1 = new Timer(1, 600, document.querySelector('#time-1'));
         timer1.startTimer();
         this.setState({
@@ -90,7 +96,7 @@ export default class Game extends React.Component {
         let turn = this.state.turn === 'white' ? 'black' : 'white';
         if (this.state.player === 1) {
           this.state.timerPlayer1.pause();
-          if (this.state.stepNumber === 0) {
+          if (this.state.timerPlayer2 === null) {
             let timer2 = new Timer(2, 600, document.querySelector('#time-2'));
             timer2.startTimer();
             this.setState({
@@ -105,6 +111,7 @@ export default class Game extends React.Component {
           this.state.timerPlayer1.unPause();
         }
         this.setState({
+          numMoves: this.state.numMoves + 1,
           lastMove: [this.state.sourceSelection, i],
           sourceSelection: -1,
           squares,
@@ -130,7 +137,7 @@ export default class Game extends React.Component {
       
       if (isMovePossible && !leadsToCheck) {
         if (squares[i] !== null) {
-          if (squares[i].player === 1) {
+          if (squares[i].player === this.state.whitePlayer) {
             whiteFallenSoldiers.push(squares[i]);
           } else {
             blackFallenSoldiers.push(squares[i]);
@@ -141,7 +148,7 @@ export default class Game extends React.Component {
           squares[this.state.sourceSelection].isEnPassat(this.state.sourceSelection, i, this.state.lastMove)) {
             squares[i] = squares[this.state.sourceSelection];
             squares[this.state.sourceSelection] = null;
-            if (this.state.player === 1) {
+            if (this.state.player === this.state.whitePlayer) {
               blackFallenSoldiers.push(squares[i + 8]);
               squares[i + 8] = null;
             } else {
@@ -199,7 +206,7 @@ export default class Game extends React.Component {
 
           if (this.state.player === 1) {
             this.state.timerPlayer1.pause();
-            if (this.state.stepNumber === 0) {
+            if (this.state.timerPlayer2 === null) {
               let timer2 = new Timer(2, 600, document.querySelector('#time-2'));
               timer2.startTimer();
               this.setState({
@@ -215,6 +222,7 @@ export default class Game extends React.Component {
           }
 
           this.setState(oldState => ({
+            numMoves: this.state.numMoves + 1,
             lastMove: [this.state.sourceSelection, i],
             sourceSelection: -1,
             squares,
@@ -240,8 +248,8 @@ export default class Game extends React.Component {
     var squares = [...this.state.squares];
     var enPassat = this.getEnPassat();
     let player = 1;
-    let turn = 'white';
-    var fen = boardToFen(squares, enPassat);
+    let turn = this.state.whitePlayer === 1 ? 'white' : 'black';
+    var fen = boardToFen(squares, enPassat, this.state.whitePlayer);
     var sf = eval('stockfish');
     sf.postMessage(`position fen ${fen}`)
     sf.postMessage(`go depth ${this.state.aiLevel}`)
@@ -277,10 +285,11 @@ export default class Game extends React.Component {
           return
         }
 
-        this.state.timerPlayer2.pause();
-        this.state.timerPlayer1.unPause();
+        if (this.state.timerPlayer2) this.state.timerPlayer2.pause();
+        if (this.state.timerPlayer1) this.state.timerPlayer1.unPause();
 
         this.setState({
+          numMoves: this.state.numMoves + 1,
           squares: newSquares,
           sourceSelection: -1,
           player,
@@ -313,9 +322,14 @@ export default class Game extends React.Component {
     src = ((8 - parseInt(src[1])) * 8) + (src[0].charCodeAt(0) - 97); 
     dest = ((8 - parseInt(dest[1])) * 8) + (dest[0].charCodeAt(0) - 97); 
     const whiteFallenSoldiers = [];
+    const blackFallenSoldiers = [];
     const isDestEnemyOccupied = Boolean(newSquares[dest]);
-    if (isDestEnemyOccupied) whiteFallenSoldiers.push(newSquares[dest]);
     if (isDestEnemyOccupied) {
+      if (this.state.whitePlayer === 1) {
+        whiteFallenSoldiers.push(newSquares[dest]);
+      } else {
+        blackFallenSoldiers.push(newSquares[dest]);
+      }
       this.setScore(newSquares[dest], 2);
     }
     newSquares[dest] = newSquares[src];
@@ -326,6 +340,7 @@ export default class Game extends React.Component {
     }
     this.setState(oldState => ({
       whiteFallenSoldiers: [...oldState.whiteFallenSoldiers, ...whiteFallenSoldiers],
+      blackFallenSoldiers: [...oldState.blackFallenSoldiers, ...blackFallenSoldiers],
     }));
     return newSquares;
   }
@@ -538,6 +553,7 @@ export default class Game extends React.Component {
                 blackFallenSoldiers={this.state.blackFallenSoldiers}
                 player1Score={this.state.player1Score === 0 ? "" : "+ " + this.state.player1Score}
                 player2Score={this.state.player2Score === 0 ? "" : "+ " + this.state.player2Score}
+                whitePlayer={this.state.whitePlayer}
               />
               }
             </div>

@@ -6,7 +6,7 @@ import Knight from '../pieces/knight';
 import Pawn from '../pieces/pawn'; 
 
 
-let boardToFen = (squares, enPassat) => {
+let boardToFen = (squares, enPassat, whitePlayer) => {
     var fen = "";
     for (var row = 0; row < 8; row++) {
         var numEmpty = 0;
@@ -43,7 +43,7 @@ let boardToFen = (squares, enPassat) => {
         if (row < 7) fen += "/";
     }
 
-    fen += " b ";
+    fen += whitePlayer === 1 ? " b " : "w ";
 
     var castleCode = "";
     if (squares[60] instanceof King && !squares[60].hasMoved) {
