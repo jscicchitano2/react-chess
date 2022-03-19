@@ -10,6 +10,7 @@ import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
 import {boardToFen} from '../helper-functions/fen.js';
+import Square from './square';
 
 export default class Game extends React.Component {
   constructor(props) {
@@ -17,6 +18,7 @@ export default class Game extends React.Component {
       super(props);
       this.state = {
         whitePlayer: whitePlayer,
+        moved: false,
         squares: initializeBoard(whitePlayer),
         player: whitePlayer,
         sourceSelection: -1,
@@ -40,7 +42,12 @@ export default class Game extends React.Component {
   handleClick(i) {
     if (this.state.gameOver || this.state.stepNumber !== this.state.history.length - 1) return;
     if (this.state.player === 2) {
-      this.moveBot();
+      if (this.state.stepNumber === 0 && !this.state.moved) {
+        this.moveBot();
+        this.setState({
+          moved: true
+        })
+      }
       return;
     }
     const squares = [...this.state.squares];
@@ -48,9 +55,11 @@ export default class Game extends React.Component {
       if (!squares[i] || squares[i].player !== this.state.player) {
         if (squares[i]) {
           squares[i].style = { ...squares[i].style, backgroundColor: "" };
+          this.clearMoves();
         }
       } else {
         squares[i].style = { ...squares[i].style, backgroundColor: "RGB(111,143,114)" }; // Emerald from http://omgchess.blogspot.com/2015/09/chess-board-color-schemes.html
+        this.showMoves(i);
         this.setState({
           sourceSelection: i
         })
@@ -69,11 +78,13 @@ export default class Game extends React.Component {
         squares[this.state.sourceSelection].isMovePossible(this.state.sourceSelection, i, squares);
       if (((squares[i] && squares[i].player === this.state.player) || !isPossible)) {
         squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
+        this.clearMoves();
         this.setState({
           sourceSelection: -1
         });
       }
     }
+    this.clearMoves();
 
     squares[this.state.sourceSelection].style = { ...squares[this.state.sourceSelection].style, backgroundColor: "" };
 
@@ -499,6 +510,45 @@ export default class Game extends React.Component {
       }
     }
     return false;
+  }
+
+  showMoves(position) {
+    var squares = this.state.squares;
+    var piece = this.state.squares[position];
+    var rows = document.getElementsByClassName("board-row");
+    var board = [];
+    for (var x = 0; x < rows.length; x++) {
+      var row = rows[x].children;
+      for (var y = 0; y < row.length; y++) {
+        board.push(row[y]);
+      }
+    }
+    for (var i = 0; i < 64; i++) {
+      var isMovePossible = piece instanceof Pawn ? piece.isMovePossible(position, i, Boolean(squares[i]), this.state.lastMove) : 
+          piece.isMovePossible(position, i, squares);
+      if (isMovePossible) {
+        if (!squares[i]) {
+          var color = board[i].classList[1];
+          color = color === "light-square" ? "#d0dff4" : "#4b648a";
+          board[i].style = board[i].style + ";background-image: radial-gradient(rgba(20,85,30,0.5) 19%, " + color + " 20%);";
+        } 
+      }
+    }
+  }
+
+  clearMoves() {
+    var rows = document.getElementsByClassName("board-row");
+    var board = [];
+    for (var x = 0; x < rows.length; x++) {
+      var row = rows[x].children;
+      for (var y = 0; y < row.length; y++) {
+        board.push(row[y]);
+      }
+    }
+    for (var i = 0; i < 64; i++) {
+      var image = board[i].style.backgroundImage;
+      if (image.indexOf("url") < 0 ) board[i].style.backgroundImage = "";
+    }
   }
 
   setStockfishLevel = (e) => {
