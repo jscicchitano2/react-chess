@@ -10,7 +10,6 @@ import Pawn from '../pieces/pawn';
 import initializeBoard from '../helper-functions/initializeBoard.js';
 import FallenSoldierBlock from './fallen-soldier-block.js';
 import {boardToFen} from '../helper-functions/fen.js';
-import Square from './square';
 
 export default class Game extends React.Component {
   constructor(props) {
@@ -359,7 +358,7 @@ export default class Game extends React.Component {
   isTimeOut() {
     var self = this;
     this.interval = setInterval(function() {
-        if (self.state.timerPlayer1.duration < 1) {
+        if (self.state.timerPlayer1 && self.state.timerPlayer1.duration < 1) {
           self.state.timerPlayer1.pause();
           self.state.timerPlayer2.pause();
           self.setState(oldState => ({
@@ -367,7 +366,7 @@ export default class Game extends React.Component {
             sourceSelection: -1,
             gameOver: true
           }))
-        } else if (self.state.timerPlayer2.duration < 1) {
+        } else if (self.state.timerPlayer2 && self.state.timerPlayer2.duration < 1) {
           self.state.timerPlayer1.pause();
           self.state.timerPlayer2.pause();
           self.setState(oldState => ({
@@ -461,10 +460,15 @@ export default class Game extends React.Component {
   }
 
   hasValidMove(squares, player) {
+    const isMovePossible = function(i, j) {
+      return squares[i] instanceof Pawn ? 
+        squares[i].isMovePossible(i, j, Boolean(squares[j]), [null, null], squares) : 
+        squares[i].isMovePossible(i, j, squares);
+    }
     for (var i = 0; i < 64; i++) {
       if (squares[i] != null && squares[i].player === player) {
         for (var j = 0; j < 64; j++) {
-          if (i !== j && !(squares[j] && squares[j].player === player) && squares[i].isMovePossible(i, j, squares, [null, null], squares)) {
+          if (i !== j && !(squares[j] && squares[j].player === player) && isMovePossible(i, j)) {
             const newSquares = [...squares];
             newSquares[j] = newSquares[i];
             newSquares[i] = null;
@@ -557,6 +561,45 @@ export default class Game extends React.Component {
     }
   }
 
+  newGame() {
+    var whitePlayer = Math.floor(Math.random() * (2 - 1 + 1)) + 1;
+    var timerPlayer1 = this.state.timerPlayer1;
+    timerPlayer1.setDuration(600);
+    var timerPlayer2 = this.state.timerPlayer2;
+    timerPlayer2.setDuration(600);
+    this.setState({
+      whitePlayer: whitePlayer,
+      moved: false,
+      squares: initializeBoard(whitePlayer),
+      player: whitePlayer,
+      sourceSelection: -1,
+      status: '',
+      turn: 'white',
+      whiteFallenSoldiers: [],
+      blackFallenSoldiers: [],
+      lastMove: [null, null],
+      history: [initializeBoard(whitePlayer)],
+      stepNumber: 0,
+      player1Score: 0,
+      player2Score: 0,
+      timerPlayer1: timerPlayer1,
+      timerPlayer2: timerPlayer2,
+      aiLevel: 1,
+      gameOver: false,
+      numMoves: 0
+    })
+  }
+
+  resign() {
+    if (this.state.timerPlayer1) this.state.timerPlayer1.pause();
+    if (this.state.timerPlayer2) this.state.timerPlayer2.pause();
+    this.setState({
+      status: "Player 1 resigned. Player 2 wins!",
+      sourceSelection: -1,
+      gameOver: true
+    })
+  }
+
   setStockfishLevel = (e) => {
     this.setState({ aiLevel: e.target.value });
   }
@@ -577,6 +620,10 @@ export default class Game extends React.Component {
             <div id="player-turn-box" style={{ backgroundColor: this.state.turn }}>
 
             </div>
+            <p>
+              <button onClick={() => this.newGame()}>{"New Game"}</button>
+              <button onClick={() => this.resign()}>{"Resign"}</button>
+            </p>
             <div style={this.state.stepNumber === 0 ? {display: 'block'} : {display: 'none'}}> 
               <label>Stockfish level:</label>
               <select name="ai-level" id="ai-level" value={this.state.aiLevel} onChange={this.setStockfishLevel}>
@@ -665,5 +712,16 @@ class Timer {
 
   unPause() {
     this.startTimer();
+  }
+
+  setDuration(newDuration) {
+    this.duration = newDuration;
+    var timer = this.duration
+    var minutes = parseInt(timer / 60, 10);
+    var seconds = parseInt(timer % 60, 10);
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
+    this.display.textContent = minutes + ":" + seconds;
+    this.pause();
   }
 } 
