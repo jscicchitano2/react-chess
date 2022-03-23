@@ -175,7 +175,7 @@ export default class Game extends React.Component {
 
         // Pawn promotions
         if (squares[i] instanceof Pawn && squares[i].canPromote(i)) {
-          squares[i] = new Queen(this.state.player);
+          squares[i] = new Queen(this.state.player, this.state.whitePlayer);
         }
 
         const isCheckMe = this.isCheckForPlayer(squares, this.state.player)
@@ -261,9 +261,14 @@ export default class Game extends React.Component {
     let turn = this.state.whitePlayer === 1 ? 'white' : 'black';
     var fen = boardToFen(squares, enPassat, this.state.whitePlayer);
     var sf = eval('stockfish');
-    sf.postMessage(`position fen ${fen}`)
-    sf.postMessage(`go depth ${this.state.aiLevel}`)
+    sf.postMessage(`uci`);
+    sf.postMessage(`setoption name Skill Level value ${this.state.aiLevel - 1}`);
+    sf.postMessage(`setoption name Skill Level Maximum Error value 900`);
+    sf.postMessage(`setoption name Skill Level Probability value 10`);
+    sf.postMessage(`position fen ${fen}`);
+    sf.postMessage(`go depth 10`);
     sf.onmessage = (event) => { 
+      console.log(event);
       let message = event.data ? event.data : event;
       if (message.startsWith("bestmove")) {
         var move = message.split(" ")[1];
@@ -346,7 +351,7 @@ export default class Game extends React.Component {
     newSquares[src] = null;
     // Pawn promotions
     if (newSquares[dest] instanceof Pawn && newSquares[dest].canPromote(dest)) {
-      newSquares[dest] = new Queen(this.state.player);
+      newSquares[dest] = new Queen(this.state.player, this.state.whitePlayer);
     }
     this.setState(oldState => ({
       whiteFallenSoldiers: [...oldState.whiteFallenSoldiers, ...whiteFallenSoldiers],
