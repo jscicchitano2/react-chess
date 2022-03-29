@@ -60,6 +60,11 @@ export default class Pawn extends Piece {
         return false;
     }
 
+    setPlayer(player) {
+        console.log("hello");
+        this.player = player;
+    }
+
     /**
      * returns array of one if pawn moves two steps, else returns empty array  
      * @param  {[type]} src  [description]

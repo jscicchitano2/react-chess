@@ -268,7 +268,6 @@ export default class Game extends React.Component {
     sf.postMessage(`position fen ${fen}`);
     sf.postMessage(`go depth 10`);
     sf.onmessage = (event) => { 
-      console.log(event);
       let message = event.data ? event.data : event;
       if (message.startsWith("bestmove")) {
         var move = message.split(" ")[1];

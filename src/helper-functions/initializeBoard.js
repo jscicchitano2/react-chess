@@ -55,11 +55,11 @@ export default function intializeBoard(whitePlayer) {
         squares[58] = new Bishop(1, 2);
         squares[61] = new Bishop(1, 2);
     
-        squares[3] = new Queen(2, 2);
-        squares[4] = new King(2, 2);
+        squares[4] = new Queen(2, 2);
+        squares[3] = new King(2, 2);
     
-        squares[59] = new Queen(1, 2);
-        squares[60] = new King(1, 2);
+        squares[60] = new Queen(1, 2);
+        squares[59] = new King(1, 2);
     }
     
     return squares;
