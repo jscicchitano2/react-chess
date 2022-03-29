@@ -38,7 +38,8 @@ export default class MultiGame extends React.Component {
         chekMate: false,
         staleMate: false,
         resign: false,
-        timeOut: false
+        timeOut: false,
+        castled: false
       };
   }
 
@@ -124,7 +125,8 @@ export default class MultiGame extends React.Component {
           stepNumber: this.state.history.length,
           player,
           status: '',
-          turn
+          turn,
+          castled: true
         }, this.shareMove);
       }
     } else {
@@ -305,7 +307,8 @@ export default class MultiGame extends React.Component {
             turn: this.props.player === 1 ? 2 : 1,
             checkMate: this.state.checkMate,
             staleMate: this.state.staleMate,
-            resign: this.state.resign
+            resign: this.state.resign,
+            castled: this.state.castled
         },
         channel: this.props.gameChannel
     });
@@ -322,13 +325,13 @@ export default class MultiGame extends React.Component {
             // handle message
             var msg = m.message; // The Payload
             if (msg.turn === self.props.player) {
-                self.updateBoard(msg.squares, msg.lastMove, msg.pieces, msg.checkMate, msg.staleMate, msg.resign);
+                self.updateBoard(msg.squares, msg.lastMove, msg.pieces, msg.checkMate, msg.staleMate, msg.resign, msg.castled);
             }
         }
     });
   }
 
-  updateBoard(squares, lastMove, pieces, checkMate, staleMate, resign) {
+  updateBoard(squares, lastMove, pieces, checkMate, staleMate, resign, castled) {
     squares = this.deserialize(squares, pieces);
     let player = 1;
     let turn = this.state.whitePlayer === 1 ? 'white' : 'black';
@@ -340,8 +343,8 @@ export default class MultiGame extends React.Component {
         squares[opposite] = temp;
     }
 
-    var newSquares = null;
-    if (!resign) newSquares = this.move(lastMove);
+    var newSquares = squares;
+    if (!resign && !castled) newSquares = this.move(lastMove);
 
     if (checkMate || staleMate || resign) {
         var status = "";
@@ -351,7 +354,6 @@ export default class MultiGame extends React.Component {
             status = "Draw by stalemate!";
         } else if (resign) {
             status = "Player 2 resigned. You won!";
-            newSquares = squares;
         }
         this.state.timerPlayer1.pause();
         this.state.timerPlayer2.pause();
@@ -377,7 +379,8 @@ export default class MultiGame extends React.Component {
         history: this.state.history.concat([newSquares]),
         stepNumber: this.state.history.length,
         status: '',
-        turn
+        turn,
+        castled: false
     })
   }
 
