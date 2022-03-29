@@ -104,10 +104,11 @@ class Lobby extends Component {
                 channels: [this.lobbyChannel],
                 withPresence: true
             });
-    
+            var whitePlayer = Math.floor(Math.random() * (2 - 1 + 1)) + 1;
             this.pubnub.publish({
                 message: {
                     notRoomCreator: true,
+                    whitePlayer: whitePlayer
                 },
                 channel: this.lobbyChannel
             });
@@ -145,10 +146,9 @@ class Lobby extends Component {
             var msg = m.message; // The Payload
             if (self.lobbyChannel != null && msg.notRoomCreator) {
                 // Create a different channel for the game
-                var whitePlayer = Math.floor(Math.random() * (2 - 1 + 1)) + 1;
                 self.setState({
                     isPlaying: true,
-                    whitePlayer: whitePlayer
+                    whitePlayer: msg.whitePlayer
                 });
                 // Close the modals if they are opened
                 Swal.close();

@@ -33,11 +33,12 @@ export default class MultiGame extends React.Component {
         timerPlayer2: null,
         player1Score: 0,
         player2Score: 0,
-        aiLevel: 1,
         gameOver: false,
         numMoves: 0,
         chekMate: false,
-        staleMate: false
+        staleMate: false,
+        resign: false,
+        timeOut: false
       };
   }
 
@@ -178,7 +179,7 @@ export default class MultiGame extends React.Component {
         if (!this.hasValidMove(squares, otherPlayer)) {
           if (this.isCheckForPlayer(squares, otherPlayer)) {
             this.setState(oldState => ({
-              status: "Checkmate. Player " + this.state.player + " wins!",
+              status: "Checkmate. You win!",
               sourceSelection: -1,
               squares,
               lastMove: [this.state.sourceSelection, i],
@@ -303,7 +304,8 @@ export default class MultiGame extends React.Component {
             lastMove: this.state.lastMove,
             turn: this.props.player === 1 ? 2 : 1,
             checkMate: this.state.checkMate,
-            staleMate: this.state.staleMate
+            staleMate: this.state.staleMate,
+            resign: this.state.resign
         },
         channel: this.props.gameChannel
     });
@@ -320,13 +322,13 @@ export default class MultiGame extends React.Component {
             // handle message
             var msg = m.message; // The Payload
             if (msg.turn === self.props.player) {
-                self.updateBoard(msg.squares, msg.lastMove, msg.pieces, msg.checkMate, msg.staleMate);
+                self.updateBoard(msg.squares, msg.lastMove, msg.pieces, msg.checkMate, msg.staleMate, msg.resign);
             }
         }
     });
   }
 
-  updateBoard(squares, lastMove, pieces, checkMate, staleMate) {
+  updateBoard(squares, lastMove, pieces, checkMate, staleMate, resign) {
     squares = this.deserialize(squares, pieces);
     let player = 1;
     let turn = this.state.whitePlayer === 1 ? 'white' : 'black';
@@ -338,10 +340,19 @@ export default class MultiGame extends React.Component {
         squares[opposite] = temp;
     }
 
-    var newSquares = this.move(lastMove);
+    var newSquares = null;
+    if (!resign) newSquares = this.move(lastMove);
 
-    if (checkMate || staleMate) {
-        var status = checkMate ? "Checkmate. Player " + 2 + " wins!" : "Draw by stalemate!";
+    if (checkMate || staleMate || resign) {
+        var status = "";
+        if (checkMate) {
+            status = "Checkmate. Player 2 wins!";
+        } else if (staleMate) {
+            status = "Draw by stalemate!";
+        } else if (resign) {
+            status = "Player 2 resigned. You won!";
+            newSquares = squares;
+        }
         this.state.timerPlayer1.pause();
         this.state.timerPlayer2.pause();
         this.setState(oldState => ({
@@ -643,24 +654,22 @@ export default class MultiGame extends React.Component {
       player2Score: 0,
       timerPlayer1: timerPlayer1,
       timerPlayer2: timerPlayer2,
-      aiLevel: 1,
       gameOver: false,
       numMoves: 0
     })
   }
 
   resign() {
+    if (this.state.gameOver) return;
     if (this.state.timerPlayer1) this.state.timerPlayer1.pause();
     if (this.state.timerPlayer2) this.state.timerPlayer2.pause();
     this.setState({
-      status: "Player 1 resigned. Player 2 wins!",
+      status: "You resigned. Player 2 wins!",
       sourceSelection: -1,
-      gameOver: true
+      gameOver: true,
+      resign: true
     })
-  }
-
-  setStockfishLevel = (e) => {
-    this.setState({ aiLevel: e.target.value });
+    this.setState({}, this.shareMove)
   }
 
   render() {
@@ -683,21 +692,6 @@ export default class MultiGame extends React.Component {
               <button onClick={() => this.newGame()}>{"New Game"}</button>
               <button onClick={() => this.resign()}>{"Resign"}</button>
             </p>
-            <div style={this.state.stepNumber === 0 ? {display: 'block'} : {display: 'none'}}> 
-              <label>Stockfish level:</label>
-              <select name="ai-level" id="ai-level" value={this.state.aiLevel} onChange={this.setStockfishLevel}>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-              </select>
-            </div>
             <div>
               <button onClick={() => this.jumpTo(true)}>{"<<"}</button>
               <button onClick={() => this.jumpNext(true)}>{"<"}</button>
