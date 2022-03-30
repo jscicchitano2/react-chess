@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+//<li><NavLink to='/playOffline'>Play Offline</NavLink></li>
 
 const Navigation = () => (
     <nav>
@@ -7,7 +8,6 @@ const Navigation = () => (
         <li><NavLink to='/'>Home</NavLink></li>
         <li><NavLink to='/playOnline'>Play Online</NavLink></li>
         <li><NavLink to='/playComputer'>Play Computer</NavLink></li>
-        <li><NavLink to='/playOffline'>Play Offline</NavLink></li>
         <li><NavLink to='/login'>Log In</NavLink></li>
         <li><NavLink to='/profile'>Profile</NavLink></li>
       </ul>
